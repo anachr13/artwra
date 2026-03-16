@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "API Server",
+      "runtimeExecutable": "/opt/homebrew/lib/node_modules/corepack/shims/pnpm",
+      "runtimeArgs": ["--filter", "api", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "Expo Mobile",
+      "runtimeExecutable": "/opt/homebrew/bin/node",
+      "runtimeArgs": ["/Users/christosanastasiades/Documents/GitHub/artwra/apps/mobile/node_modules/expo/bin/cli", "start", "/Users/christosanastasiades/Documents/GitHub/artwra/apps/mobile", "--port", "8081"],
+      "port": 8081
+    }
+  ]
+}
