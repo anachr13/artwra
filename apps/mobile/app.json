@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Artwra",
+    "slug": "artwra",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "artwra",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1207"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.artwra.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Artwra uses the camera to capture photos and videos during your creative sessions.",
+        "NSMicrophoneUsageDescription": "Artwra uses the microphone to record audio notes during your creative sessions.",
+        "NSPhotoLibraryUsageDescription": "Artwra saves your session media to your photo library.",
+        "UIBackgroundModes": ["audio", "fetch", "processing"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1207"
+      },
+      "package": "com.artwra.app",
+      "permissions": ["CAMERA", "RECORD_AUDIO", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Artwra uses the camera to capture your creative process."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Artwra uses the microphone to record audio notes."
+        }
+      ]
+    ]
+  }
+}
