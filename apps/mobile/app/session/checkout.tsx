@@ -17,8 +17,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import api from '@/lib/api';
 import { useSessionStore, MediaItem } from '@/stores/sessionStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useProjectStore } from '@/stores/projectStore';
 import { formatElapsed, formatDuration } from '@/lib/formatters';
+import { uploadAllPending } from '@/services/uploadService';
 
 function SummaryStrip({ elapsedSeconds, media }: { elapsedSeconds: number; media: MediaItem[] }) {
   const photoCount = media.filter((m) => m.type === 'photo').length;
@@ -89,9 +91,11 @@ export default function CheckoutScreen() {
     discardSession,
   } = useSessionStore();
 
+  const { user } = useAuthStore();
   const { fetchProjects } = useProjectStore();
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
   const photos = media.filter((m) => m.type === 'photo');
@@ -102,6 +106,18 @@ export default function CheckoutScreen() {
 
   const handleSave = async () => {
     if (!sessionId) return;
+
+    // Sync any pending media uploads first
+    const hasPending = media.some(m => m.syncStatus === 'pending' || m.syncStatus === 'failed');
+    if (hasPending && user?.id) {
+      setIsSyncing(true);
+      try {
+        await uploadAllPending(user.id, sessionId);
+      } finally {
+        setIsSyncing(false);
+      }
+    }
+
     setIsSaving(true);
 
     try {
@@ -125,8 +141,11 @@ export default function CheckoutScreen() {
     } catch {
       Alert.alert(
         'Save failed',
-        "Couldn't save session — your work is stored locally. Please try again.",
-        [{ text: 'OK' }]
+        "Couldn't save session — your work is stored locally. Tap to retry.",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Retry', onPress: handleSave },
+        ]
       );
     } finally {
       setIsSaving(false);
@@ -528,16 +547,23 @@ export default function CheckoutScreen() {
         >
           <TouchableOpacity
             onPress={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || isSyncing}
             style={{
-              backgroundColor: isSaving ? 'rgba(212,146,42,0.5)' : '#d4922a',
+              backgroundColor: (isSaving || isSyncing) ? 'rgba(212,146,42,0.5)' : '#d4922a',
               borderRadius: 16,
               padding: 16,
               alignItems: 'center',
               marginBottom: 12,
             }}
           >
-            {isSaving ? (
+            {isSyncing ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <ActivityIndicator color="#1a1207" />
+                <Text style={{ color: '#1a1207', fontSize: 17, fontWeight: '700' }}>
+                  Syncing your media...
+                </Text>
+              </View>
+            ) : isSaving ? (
               <ActivityIndicator color="#1a1207" />
             ) : (
               <Text style={{ color: '#1a1207', fontSize: 17, fontWeight: '700' }}>

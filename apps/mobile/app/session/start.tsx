@@ -6,6 +6,7 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  Alert,
   StatusBar,
   StyleSheet,
 } from 'react-native';
@@ -60,6 +61,14 @@ export default function SessionStartScreen() {
       router.replace('/session/active');
     } catch {
       setError('Could not start session. Please try again.');
+      Alert.alert(
+        "Couldn't start session",
+        'Please try again.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Retry', onPress: handleBeginSession },
+        ]
+      );
     } finally {
       setIsLoading(false);
     }

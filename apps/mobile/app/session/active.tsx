@@ -25,8 +25,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import { useSessionStore, MediaItem } from '@/stores/sessionStore';
+import { useAuthStore } from '@/stores/authStore';
 import { formatElapsed } from '@/lib/formatters';
 import { registerTimerTask, unregisterTimerTask } from '@/tasks/sessionTimerTask';
+import { triggerUpload } from '@/services/uploadService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -185,6 +187,7 @@ function MediaThumbnail({ item }: { item: MediaItem }) {
 export default function ActiveSessionScreen() {
   const store = useSessionStore();
   const {
+    sessionId,
     projectName,
     elapsedSeconds,
     isPaused,
@@ -195,6 +198,7 @@ export default function ActiveSessionScreen() {
     tickTimer,
     isDraft,
   } = store;
+  const { user } = useAuthStore();
 
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [noteText, setNoteText] = useState('');
@@ -256,11 +260,15 @@ export default function ActiveSessionScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      addMedia({
+      const newItemId = addMedia({
         type: 'photo',
         localPath: result.assets[0].uri,
         timestampInSession: elapsedSeconds,
       });
+      if (user?.id && sessionId) {
+        const newItem = useSessionStore.getState().media.find(m => m.id === newItemId);
+        if (newItem) triggerUpload(newItem, user.id, sessionId);
+      }
     }
   };
 
@@ -272,12 +280,16 @@ export default function ActiveSessionScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      addMedia({
+      const newItemId = addMedia({
         type: 'video',
         localPath: result.assets[0].uri,
         duration: result.assets[0].duration ?? undefined,
         timestampInSession: elapsedSeconds,
       });
+      if (user?.id && sessionId) {
+        const newItem = useSessionStore.getState().media.find(m => m.id === newItemId);
+        if (newItem) triggerUpload(newItem, user.id, sessionId);
+      }
     }
   };
 
@@ -297,12 +309,16 @@ export default function ActiveSessionScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      addMedia({
+      const newItemId = addMedia({
         type: 'timelapse',
         localPath: result.assets[0].uri,
         duration: result.assets[0].duration ?? undefined,
         timestampInSession: elapsedSeconds,
       });
+      if (user?.id && sessionId) {
+        const newItem = useSessionStore.getState().media.find(m => m.id === newItemId);
+        if (newItem) triggerUpload(newItem, user.id, sessionId);
+      }
     }
   };
 
@@ -315,12 +331,16 @@ export default function ActiveSessionScreen() {
       const durationMs = status.isLoaded ? status.durationMillis ?? 0 : 0;
 
       if (uri) {
-        addMedia({
+        const newItemId = addMedia({
           type: 'audio',
           localPath: uri,
           duration: Math.round(durationMs / 1000),
           timestampInSession: elapsedSeconds,
         });
+        if (user?.id && sessionId) {
+          const newItem = useSessionStore.getState().media.find(m => m.id === newItemId);
+          if (newItem) triggerUpload(newItem, user.id, sessionId);
+        }
       }
       setRecording(null);
       setIsRecordingAudio(false);

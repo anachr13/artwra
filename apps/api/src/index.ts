@@ -7,6 +7,7 @@ import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import sessionRoutes from './routes/sessions';
 import mediaRoutes from './routes/media';
+import usersRouter from './routes/users';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/projects', projectRoutes);
 app.use('/api/v1/sessions', sessionRoutes);
 app.use('/api/v1/media', mediaRoutes);
+app.use('/api/v1/users', usersRouter);
 
 // 404 handler
 app.use((_req, res) => {
