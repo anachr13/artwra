@@ -1,0 +1,47 @@
+# Dependencies
+node_modules
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Build output
+dist
+build
+
+# Expo
+.expo
+apps/mobile/.expo
+
+# iOS/Android builds
+ios/build
+android/build
+ios/Pods
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Prisma generated (keep schema and migrations folder, ignore generated client)
+apps/api/node_modules/.prisma
+
+# TypeScript
+*.tsbuildinfo
+
+# Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# Test coverage
+coverage
