@@ -1,6 +1,91 @@
-# CLAUDE.md — Artwra
+# CLAUDE.md
 
-This file is the primary instruction source for Claude Code when building the Artwra project. Read it fully before writing any code.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+## Development Commands
+
+This is a **pnpm monorepo** (pnpm v9). Always use `pnpm`, not `npm` or `yarn`.
+
+```bash
+# Install all workspace dependencies
+pnpm install
+
+# Start the Expo dev server (mobile)
+pnpm dev:mobile          # alias for: pnpm --filter mobile start
+# Then press i (iOS simulator) or a (Android emulator) in the Expo CLI
+
+# Start the API server in watch mode
+pnpm dev:api             # alias for: pnpm --filter api dev
+# Runs at http://localhost:3000
+
+# Build the API for production
+pnpm build:api           # compiles TypeScript to dist/
+
+# Lint all workspaces
+pnpm lint
+
+# Prisma (run from repo root or prefix with pnpm --filter api)
+pnpm --filter api prisma:generate   # regenerate Prisma client after schema changes
+pnpm --filter api prisma:migrate    # run migrations in dev
+pnpm --filter api prisma:seed       # seed the database
+```
+
+> **No test framework is configured.** There are no test files in Phase 1.
+
+---
+
+## As-Built Architecture
+
+The mobile app deviates from the spec in one key area:
+
+- **Camera:** `expo-camera ~15.0.10` is installed, **not** `react-native-vision-camera v4`. The CLAUDE.md spec mandates `react-native-vision-camera` for native iOS time-lapse. Until migrated, native iOS time-lapse is not available; Android-style fallback recording is used.
+
+### Mobile (`apps/mobile/`)
+
+File-based routing lives in `app/`. All shared logic lives under `src/`:
+
+```
+src/
+  stores/       authStore, sessionStore (AsyncStorage-persisted), projectStore
+  lib/          api.ts (Axios + JWT interceptor), supabase.ts, formatters.ts, colors.ts
+  services/     uploadService.ts (exponential backoff, 3 retries)
+  hooks/        useNetworkStatus.ts
+  tasks/        sessionTimerTask.ts (expo-task-manager registration)
+  types/        index.ts (shared TypeScript interfaces)
+```
+
+**Path alias:** `@/*` resolves to `./src/*` (configured in `tsconfig.json`).
+
+**Auth flow:** `app/_layout.tsx` listens to `supabase.auth.onAuthStateChange` via `authStore` and redirects between `/(auth)` and `/(tabs)` stacks. All tokens stored in Expo SecureStore, never AsyncStorage.
+
+**Session state machine:** `sessionStore` is the source of truth for active/draft sessions. It persists to AsyncStorage via Zustand's `persist` middleware, so draft sessions survive app restarts. The store tracks each media item with a `syncStatus` field (`pending` | `uploading` | `synced` | `failed`). `uploadService.ts` drives background uploads independently of component lifecycle.
+
+**Tailwind palette:** `tailwind.config.js` defines custom colors (`warmcolor`, `canvas`, `ochre`, `sienna`, `cobalt`, `cream`) — always use these instead of arbitrary hex values for the warm painterly aesthetic.
+
+### API (`apps/api/`)
+
+```
+src/
+  index.ts         Express app setup (cors, morgan, routes, 404, error handler)
+  routes/          auth, users, projects, sessions, media
+  middleware/       requireAuth, validate (Zod), asyncHandler, errorHandler
+  services/        storageService.ts (Supabase Storage operations)
+  lib/             prisma.ts (singleton), supabase.ts (admin client)
+  types/           express.d.ts (augments req.user)
+prisma/
+  schema.prisma    Database schema
+  seed.ts
+```
+
+**Request lifecycle:** `requireAuth` → `validate(zodSchema)` → `asyncHandler(routeFn)` → `errorHandler`. Every route handler is wrapped in `asyncHandler` so errors propagate to the global handler without try/catch boilerplate.
+
+**All responses** use the envelope: `{ data: T | null, error: { message, code } | null }`. Never return bare objects.
+
+**Supabase Storage buckets:**
+- `checkin-media` — private, signed URLs; store only the path in the DB
+- `project-covers` — public
 
 ---
 
