@@ -50,7 +50,7 @@ router.post(
   validate(AuthSyncSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { name, username, disciplines } = req.body as z.infer<typeof AuthSyncSchema>;
-    const { supabaseId, email } = req.user;
+    const { supabaseId, email } = req.jwtUser;
 
     const existingUser = await prisma.user.findUnique({
       where: { supabaseId },

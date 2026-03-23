@@ -113,7 +113,9 @@ export async function requireJwt(
   }
 
   // Only supabaseId and email are needed — the sync route handles its own upsert.
-  req.user = {
+  // Use req.jwtUser (not req.user) so routes using requireAuth continue to get
+  // the full Prisma User on req.user with no casting required.
+  req.jwtUser = {
     supabaseId: supabaseUser.id,
     email: supabaseUser.email ?? '',
   };

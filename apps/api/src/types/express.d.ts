@@ -1,13 +1,18 @@
 /**
  * @file express.d.ts
- * @description Augments the Express Request interface with the authenticated user.
+ * @description Augments the Express Request interface with authenticated user shapes.
  *
- * Two shapes are supported:
- * - `User` (Prisma model) — set by `requireAuth` after a DB lookup. Used by all
- *   standard protected routes.
- * - `JwtUser` — set by `requireJwt` (JWT validation only, no DB lookup). Used
- *   exclusively by `POST /auth/sync`, which runs before the DB record exists on
- *   first sign-up.
+ * Two properties are exposed:
+ *
+ * `req.user`    — Full Prisma `User` record. Set by `requireAuth`. Available on
+ *                 every standard protected route. Provides `id`, `email`, `name`, etc.
+ *
+ * `req.jwtUser` — Minimal JWT-only shape. Set by `requireJwt`. Available ONLY on
+ *                 `POST /auth/sync`, which must run before the DB record exists.
+ *                 Contains only `supabaseId` and `email`.
+ *
+ * Keeping these separate eliminates the `User | JwtUser` union that previously
+ * forced every route handler to cast `req.user` before accessing `id`.
  */
 import { User } from '@prisma/client';
 
@@ -26,10 +31,17 @@ declare global {
   namespace Express {
     interface Request {
       /**
-       * Set by `requireAuth` (full Prisma User) or `requireJwt` (JWT-only).
-       * Routes using `requireJwt` must only access `supabaseId` and `email`.
+       * Full Prisma User record. Set by `requireAuth` after a successful DB lookup.
+       * Use on all standard protected routes. TypeScript will error if accessed
+       * on a route that only uses `requireJwt`.
        */
-      user: User | JwtUser;
+      user: User;
+
+      /**
+       * JWT-only user shape. Set by `requireJwt` (no DB lookup).
+       * Use ONLY on `POST /auth/sync`.
+       */
+      jwtUser: JwtUser;
     }
   }
 }

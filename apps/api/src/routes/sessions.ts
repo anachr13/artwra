@@ -37,12 +37,16 @@ router.post(
     const { projectId, captureMode, startedAt } = req.body as z.infer<typeof CreateSessionSchema>;
     const userId = req.user.id;
 
+    console.log(`[POST /sessions] userId=${userId} projectId=${projectId} captureMode=${captureMode}`);
+
     const project = await prisma.project.findUnique({ where: { id: projectId } });
     if (!project) {
+      console.warn(`[POST /sessions] Project not found: ${projectId}`);
       throw createError('Project not found', 404, 'NOT_FOUND');
     }
 
     if (project.userId !== userId) {
+      console.warn(`[POST /sessions] Forbidden: project.userId=${project.userId} userId=${userId}`);
       throw createError('You do not have access to this project', 403, 'FORBIDDEN');
     }
 
