@@ -59,11 +59,27 @@ export default function SessionStartScreen() {
       startSession(project.id, project.title, captureMode, sessionId);
 
       router.replace('/session/active');
-    } catch {
-      setError('Could not start session. Please try again.');
+    } catch (err: unknown) {
+      // Extract the actual API error message for better debugging.
+      let message = 'Could not start session. Please try again.';
+      if (
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        err.response &&
+        typeof err.response === 'object' &&
+        'data' in err.response
+      ) {
+        const apiError = (err.response as { data?: { error?: { message?: string } } }).data?.error?.message;
+        if (apiError) message = apiError;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+      console.error('[Session Start] POST /sessions failed:', message, err);
+      setError(message);
       Alert.alert(
         "Couldn't start session",
-        'Please try again.',
+        message,
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Retry', onPress: handleBeginSession },
