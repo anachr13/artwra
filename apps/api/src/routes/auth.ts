@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { requireAuth } from '../middleware/requireAuth';
+import { requireJwt } from '../middleware/requireAuth';
 import { validate } from '../middleware/validate';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { prisma } from '../lib/prisma';
@@ -15,7 +15,7 @@ const AuthSyncSchema = z.object({
 
 router.post(
   '/sync',
-  requireAuth,
+  requireJwt,
   validate(AuthSyncSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { name, username, disciplines } = req.body as z.infer<typeof AuthSyncSchema>;
