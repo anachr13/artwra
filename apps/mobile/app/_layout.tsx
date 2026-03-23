@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { Stack } from 'expo-router';
 import { router } from 'expo-router';
@@ -13,13 +13,17 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { setSession } = useAuthStore();
+  // Guard flag — prevents onAuthStateChange from double-navigating after the
+  // initial getSession() call has already handled routing on cold start.
+  const initialised = useRef(false);
 
   useEffect(() => {
-    // Check initial session and ensure user is synced to backend DB.
+    // Check initial session on cold start and route accordingly.
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        // Ensure user exists in the backend database (handles SSO users
-        // who may not have been synced yet, e.g. after app update).
+        // Ensure the user record exists in the backend DB. Passes name/username
+        // as seed values; the backend only uses them when creating the record
+        // for the first time — existing users are never overwritten.
         const user = session.user;
         const email = user.email ?? '';
         const fullName =
@@ -45,12 +49,19 @@ export default function RootLayout() {
       } else {
         router.replace('/(auth)/login');
       }
+
+      // Mark initialisation complete so the onAuthStateChange listener below
+      // skips navigation for the INITIAL_SESSION event it fires immediately.
+      initialised.current = true;
       SplashScreen.hideAsync();
     });
 
-    // Listen for auth state changes
+    // Listen for subsequent auth state changes (sign-in, sign-out, token refresh).
+    // We skip the first event because getSession() above already handled routing.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        if (!initialised.current) return; // skip the redundant INITIAL_SESSION event
+
         if (session) {
           setSession(session, useAuthStore.getState().user);
           router.replace('/(tabs)/gallery');
